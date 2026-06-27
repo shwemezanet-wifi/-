@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Menu Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="app-body" class="bg-slate-100 font-sans text-slate-800 antialiased m-0 p-0 pb-32 transition-colors duration-300">
+
+    <div id="hero-bg" class="bg-cover bg-center h-64 relative flex items-center justify-center text-center px-4 transition-all duration-500 shadow-lg" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=600');">
+        
+        <div class="flex flex-col items-center z-20 text-white mt-2">
+            
+            <div id="shop-logo-container" class="w-24 h-24 bg-white/40 p-1 rounded-full shadow-[0_0_25px_rgba(255,255,255,0.8)] mb-2 border-2 border-white hidden backdrop-blur-md transition-all duration-300">
+                <img id="shop-logo" src="" class="w-full h-full object-cover rounded-full">
+            </div>
+            
+            <h1 id="shop-name" class="text-2xl font-black tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">မမဲ ကြက်ပေါင်းခေါက်ဆွဲ</h1>
+            <p id="promo-title" class="text-xs text-orange-400 font-black mt-1.5 bg-black/50 px-4 py-1 rounded-full backdrop-blur-md shadow-md"></p>
+        </div>
+    </div>
+
+    <div id="tab-bar" class="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200 z-40 flex justify-center p-3 gap-2 transition-colors duration-300">
+        <button onclick="filterCategory('All')" id="tab-All" class="px-4 py-2 rounded-full font-black text-xs bg-orange-500 text-white transition cursor-pointer shadow-md shadow-orange-500/20">📋 အားလုံး</button>
+        <button onclick="filterCategory('Food')" id="tab-Food" class="px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer">🍝 အစားအစာ</button>
+        <button onclick="filterCategory('Drink')" id="tab-Drink" class="px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer">🍹 ဖျော်ရည်/ယာမကာ</button>
+    </div>
+
+    <div class="max-w-xl mx-auto px-4 mt-6">
+        <div id="table-badge-container" class="mb-5 hidden text-center"><span id="table-badge" class="inline-block bg-orange-500 text-white text-xs font-black px-5 py-2 rounded-full shadow-lg"></span></div>
+        
+        <div id="my-active-orders" class="mb-6 space-y-3 hidden">
+            <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider">🔔 မိမိမှာယူထားသော အခြေအနေ</h4>
+            <div id="active-orders-container"></div>
+        </div>
+
+        <h4 id="menu-title-text" class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">🍽️ မီနူး စာရင်း</h4>
+        
+        <div id="menu-container" class="grid grid-cols-2 gap-4"></div>
+    </div>
+
+    <div id="cart-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl">
+        <div class="mb-3 max-h-32 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-100" id="cart-summary-list"></div>
+        <div class="flex justify-between items-center">
+            <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">စုစုပေါင်း ကျသင့်ငွေ</div>
+                <div id="cart-total-text" class="text-lg font-black text-slate-900"><span id="cart-total">0</span> ကျပ်</div>
+            </div>
+            <button onclick="submitOrder()" class="bg-orange-500 hover:bg-orange-600 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-orange-500/30 transition cursor-pointer text-xs">🚀 အော်ဒါလှမ်းမှာမည်</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://riyajawkexkczyirjpig.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpeWFqYXdrZXhrY3p5aXJqcGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDgzMDIsImV4cCI6MjA5ODAyNDMwMn0.adrdzoBddpSgeuWAnxZUWgGBAY-3HFA6_-EnK8bU2j0";
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let cart = {}; let allMenuItems = []; let currentCategory = 'All'; let myTableNumber = "မသိရှိပါ";
+        let currentTheme = 'light';
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableId = urlParams.get('table') ? parseInt(urlParams.get('table')) : null;
+
+        window.onload = async function() {
+            if(tableId) { await fetchTableInfo(); }
+            await fetchShopInfo();
+            fetchMenus();
+            if(tableId) { fetchMyOrdersRealtime(); }
+        };
+
+        async function fetchTableInfo() {
+            try {
+                const { data } = await supabaseClient.from('restaurant_tables').select('table_number').eq('id', tableId).single();
+                if(data) {
+                    myTableNumber = data.table_number;
+                    document.getElementById('table-badge').innerText = `🪑 စားပွဲဝိုင်း - ${myTableNumber}`;
+                    document.getElementById('table-badge-container').classList.remove('hidden');
+                }
+            } catch(e) {}
+        }
+
+        async function fetchShopInfo() {
+            try {
+                const { data } = await supabaseClient.from('restaurant_settings').select('*').eq('id', 1).single();
+                if(data) {
+                    if(data.shop_name) document.getElementById('shop-name').innerText = data.shop_name;
+                    if(data.event_title) { document.getElementById('promo-title').innerText = `🎉 ${data.event_title}`; }
+                    
+                    if(data.theme_mode) {
+                        currentTheme = data.theme_mode;
+                    }
+                    applyTheme(currentTheme);
+                    
+                    if(data.bg_image_url || data.bg_image) {
+                        let bg = data.bg_image_url || data.bg_image;
+                        let overlay = currentTheme === 'dark' ? 'rgba(15,23,42,0.8), rgba(15,23,42,0.85)' : 'rgba(0,0,0,0.45), rgba(0,0,0,0.55)';
+                        document.getElementById('hero-bg').style.backgroundImage = `linear-gradient(${overlay}), url('${bg}')`; 
+                    }
+                    
+                    let logo = data.logo_url || data.shop_logo || data.logo;
+                    if(logo) {
+                        document.getElementById('shop-logo').src = logo;
+                        document.getElementById('shop-logo-container').classList.remove('hidden');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function applyTheme(theme) {
+            const body = document.getElementById('app-body');
+            const tabBar = document.getElementById('tab-bar');
+            const menuTitle = document.getElementById('menu-title-text');
+            const cartBar = document.getElementById('cart-bar');
+            const cartTotalText = document.getElementById('cart-total-text');
+            const cartSummary = document.getElementById('cart-summary-list');
+            const logoContainer = document.getElementById('shop-logo-container');
+
+            if(theme === 'dark') {
+                body.className = "bg-slate-900 font-sans text-slate-100 antialiased m-0 p-0 pb-32 transition-colors duration-300";
+                tabBar.className = "sticky top-0 bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-800 z-40 flex justify-center p-3 gap-2 transition-colors duration-300";
+                menuTitle.className = "text-xs font-black text-slate-500 uppercase tracking-wider mb-3";
+                cartBar.className = "fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-4 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl text-white";
+                cartTotalText.className = "text-lg font-black text-orange-400";
+                cartSummary.className = "mb-3 max-h-32 overflow-y-auto bg-slate-950 p-2 rounded-xl border border-slate-800";
+                
+                // ✨ Dark Mode မှာ လိုဂိုကို ပိုလင်းသွားစေရန် အဖြူရောင် Glow အရှိန်ကို မြှင့်တင်ပေးလိုက်ပါသည်
+                if(logoContainer) logoContainer.className = "w-24 h-24 bg-white/20 p-1 rounded-full shadow-[0_0_35px_rgba(255,255,255,0.95)] mb-2 border-2 border-white/60 block backdrop-blur-md transition-all duration-300";
+            } else {
+                body.className = "bg-slate-50 font-sans text-slate-800 antialiased m-0 p-0 pb-32 transition-colors duration-300";
+                tabBar.className = "sticky top-0 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200 z-40 flex justify-center p-3 gap-2 transition-colors duration-300";
+                menuTitle.className = "text-xs font-black text-slate-400 uppercase tracking-wider mb-3";
+                cartBar.className = "fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-slate-200 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl text-slate-800";
+                cartTotalText.className = "text-lg font-black text-slate-900";
+                cartSummary.className = "mb-3 max-h-32 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-100";
+                
+                // Light Mode မှာ ပုံမှန် အလင်းရောင်အတိုင်း ထားရှိမည်
+                if(logoContainer) logoContainer.className = "w-24 h-24 bg-white/30 p-1 rounded-full shadow-lg mb-2 border border-white/40 block backdrop-blur-md transition-all duration-300";
+            }
+            updateCategoryTabButtons();
+        }
+
+        function updateCategoryTabButtons() {
+            ['All', 'Food', 'Drink'].forEach(c => {
+                const btn = document.getElementById(`tab-${c}`);
+                if(!btn) return;
+                if(c === currentCategory) { 
+                    btn.className = "px-4 py-2 rounded-full font-black text-xs bg-orange-500 text-white cursor-pointer shadow-md"; 
+                } else { 
+                    btn.className = currentTheme === 'dark' 
+                        ? "px-4 py-2 rounded-full font-black text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition cursor-pointer"
+                        : "px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer";
+                }
+            });
+        }
+
+        async function fetchMenus() {
+            try {
+                const { data } = await supabaseClient.from('menus').select('*').eq('is_available', true);
+                if(data) { allMenuItems = data; renderMenu(); }
+            } catch(e) {}
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            updateCategoryTabButtons();
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = '';
+            const filtered = currentCategory === 'All' ? allMenuItems : allMenuItems.filter(i => i.category === currentCategory);
+            
+            filtered.forEach(item => {
+                let imgUrl = item.image_url || item.menu_image || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200';
+                let qty = cart[item.id] ? cart[item.id].qty : 0;
+                
+                let cardBg = currentTheme === 'dark' ? 'bg-slate-800 border-slate-700/60 text-white' : 'bg-white border-slate-200/60 text-slate-800';
+                let btnBg = currentTheme === 'dark' ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-slate-50 border-slate-200 text-orange-600';
+                let priceColor = currentTheme === 'dark' ? 'text-orange-400' : 'text-orange-600';
+
+                container.innerHTML += `
+                    <div class="${cardBg} rounded-2xl border shadow-xs overflow-hidden flex flex-col justify-between transition-all duration-200 active:scale-98">
+                        <img src="${imgUrl}" class="w-full h-32 object-cover">
+                        <div class="p-3">
+                            <h3 class="font-black text-xs leading-tight min-h-[32px]">${item.name}</h3>
+                            <div class="${priceColor} font-black text-xs mt-1">${parseInt(item.price).toLocaleString()} ကျပ်</div>
+                            <div class="mt-3">
+                                ${qty === 0 ? 
+                                    `<button onclick="updateCart(${item.id}, 1, '${item.name}', ${item.price})" class="w-full ${btnBg} font-bold py-2 rounded-xl border text-xs cursor-pointer">➕ မှာယူမည်</button>` :
+                                    `<div class="flex items-center justify-between bg-orange-500 text-white rounded-xl p-1 font-black text-xs">
+                                        <button onclick="updateCart(${item.id}, -1)" class="px-2.5 py-0.5 text-sm cursor-pointer"> - </button>
+                                        <span>${qty}</span>
+                                        <button onclick="updateCart(${item.id}, 1)" class="px-2.5 py-0.5 text-sm cursor-pointer"> + </button>
+                                    </div>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateCart(id, change, name = '', price = 0) {
+            if(!cart[id]) { cart[id] = { id, name, price, qty: 0 }; }
+            cart[id].qty += change;
+            if(cart[id].qty <= 0) { delete cart[id]; }
+            renderMenu();
+            updateCartBar();
+        }
+
+        function updateCartBar() {
+            let total = 0; let count = 0;
+            const summaryList = document.getElementById('cart-summary-list');
+            summaryList.innerHTML = '';
+            let borderClass = currentTheme === 'dark' ? 'border-slate-800' : 'border-slate-100';
+
+            Object.values(cart).forEach(i => { 
+                total += (i.price * i.qty); count += i.qty; 
+                summaryList.innerHTML += `<div class="flex justify-between text-xs py-1 border-b ${borderClass} font-bold"><span>• ${i.name} x ${i.qty}</span><span class="text-orange-400">${(i.price * i.qty).toLocaleString()} ကျပ်</span></div>`;
+            });
+
+            document.getElementById('cart-total').innerText = total.toLocaleString();
+            const bar = document.getElementById('cart-bar');
+            if(count > 0) { bar.classList.remove('translate-y-full'); } else { bar.classList.add('translate-y-full'); }
+        }
+
+        async function submitOrder() {
+            if(!tableId) return alert('ကျေးဇူးပြု၍ စားပွဲဝိုင်း QR Code ကို အရင် Scan ဖတ်ပေးပါဗျာ။');
+            const itemsArray = Object.values(cart);
+            let total = 0; itemsArray.forEach(i => total += (i.price * i.qty));
+            
+            try {
+                const { error } = await supabaseClient.from('orders').insert([{ table_id: tableId, items: JSON.stringify(itemsArray), total_price: total, status: 'pending' }]);
+                if(error) throw error;
+                await supabaseClient.from('restaurant_tables').update({ status: 'occupied' }).eq('id', tableId);
+                alert('အော်ဒါလှမ်းမှာတာ အောင်မြင်ပါသည်ဗျာ။');
+                cart = {}; updateCartBar(); renderMenu(); loadMyOrders();
+            } catch(e) { alert('မှာယူ၍မရပါ: ' + e.message); }
+        }
+
+        function fetchMyOrdersRealtime() {
+            loadMyOrders();
+            supabaseClient.channel('my-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `table_id=eq.${tableId}` }, () => { loadMyOrders(); }).subscribe();
+        }
+
+        async function loadMyOrders() {
+            try {
+                const { data } = await supabaseClient.from('orders').select('*').eq('table_id', tableId).order('id', { ascending: false });
+                const container = document.getElementById('active-orders-container');
+                const section = document.getElementById('my-active-orders');
+                container.innerHTML = '';
+
+                if(!data || data.length === 0) { section.classList.add('hidden'); return; }
+                section.classList.remove('hidden');
+
+                data.forEach(order => {
+                    let items = []; try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch(e){}
+                    let itemsText = items.map(i => `${i.name} (${i.qty})`).join(', ');
+                    let statusText = order.status === 'pending' ? '⏳ စောင့်ဆိုင်းဆဲ' : '💰 ငွေရှင်းပြီးပါပြီ';
+                    
+                    let cardStyle = currentTheme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
+                    let statusColor = order.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400';
+
+                    container.innerHTML += `
+                        <div class="${cardStyle} p-3 rounded-xl border flex justify-between items-center shadow-xs">
+                            <div class="flex-1 pr-2">
+                                <div class="text-xs font-black leading-tight">${itemsText}</div>
+                                <div class="text-[11px] font-bold text-slate-400 mt-1">စုစုပေါင်း: ${parseInt(order.total_price).toLocaleString()} ကျပ်</div>
+                                <span class="inline-block mt-1 text-[10px] font-black px-2 py-0.5 rounded-sm ${statusColor}">${statusText}</span>
+                            </div>
+                            ${order.status === 'pending' ? `<button onclick="cancelMyOrder(${order.id})" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs px-3 py-2 rounded-lg border border-red-500/20 cursor-pointer">❌ ဖျက်မည်</button>` : ''}
+                        </div>
+                    `;
+                });
+            } catch(e) {}
+        }
+
+        async function cancelMyOrder(orderId) {
+            if(confirm('ယခုအော်ဒါကို ပြန်ဖျက်မှာ သေချာပါသလားဗျာ?')) {
+                await supabaseClient.from('orders').delete().eq('id', orderId);
+                alert('အော်ဒါကို အောင်မြင်စွာ ပြန်ဖျက်ပြီးပါပြီ။');
+                loadMyOrders();
+            }
+        }
+    </script>
+</body>
+</html>

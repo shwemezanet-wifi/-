@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Admin Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased m-0 p-0">
+
+    <div id="toast-noti" class="fixed top-5 right-5 z-50 bg-slate-900 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-slate-700 transform translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none"></div>
+
+    <div class="block md:table w-full min-h-screen">
+        <div class="block md:table-row">
+            
+            <div class="block md:table-cell md:w-64 bg-slate-900 text-slate-100 p-6 vertical-top min-h-32">
+                <h1 class="text-2xl font-black mb-6 tracking-wide border-b border-slate-800 pb-3 text-center md:text-left text-orange-500">POS Admin Pro</h1>
+                <div class="space-y-1">
+                    <button onclick="switchTab('orders-tab')" class="w-full text-left py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 transition flex items-center gap-2 cursor-pointer font-bold">🛒 လက်ရှိ Orders များ</button>
+                    <button onclick="switchTab('menu-tab')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-slate-800 transition flex items-center gap-2 cursor-pointer font-bold">🍝 ဟင်းပွဲ/ယာမကာ စီမံရန်</button>
+                    <button onclick="switchTab('tables-tab')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-slate-800 transition flex items-center gap-2 cursor-pointer font-bold">🪑 စားပွဲဝိုင်း စီမံရန်</button>
+                    <button onclick="switchTab('settings-tab')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-slate-800 transition flex items-center gap-2 cursor-pointer font-bold">🏪 ဆိုင်အချက်အလက် စီမံရန်</button>
+                </div>
+            </div>
+
+            <div class="block md:table-cell p-4 md:p-8 vertical-top">
+                
+                <div id="orders-tab" class="tab-content block">
+                    <div class="flex flex-wrap justify-between items-center mb-6 border-l-4 border-orange-500 pl-3 gap-2">
+                        <h2 class="text-2xl font-bold text-slate-900">လက်ရှိ အော်ဒါများ (Real-time)</h2>
+                        <button onclick="playAlertSound()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 px-4 rounded-xl cursor-pointer">🔊 အသံစမ်းသပ်ရန်</button>
+                    </div>
+                    <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+
+                <div id="menu-tab" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-6 text-slate-900 border-l-4 border-orange-500 pl-3">ဟင်းပွဲ/ယာမကာ စီမံရန်</h2>
+                    <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 mb-6 max-w-xl">
+                        <h3 class="text-lg font-bold mb-4 text-slate-700">ဟင်းပွဲ/ဖျော်ရည် အသစ်ထည့်သွင်းရန်</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ဟင်းပွဲ/ယာမကာ အမည်</label>
+                                <input type="text" id="menu-name" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none focus:border-orange-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">🍽️ အမျိုးအစား ရွေးချယ်ရန်</label>
+                                <select id="menu-category" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none focus:border-orange-500 bg-white font-bold text-slate-700">
+                                    <option value="Food">🍝 အစားအစာ (Food)</option>
+                                    <option value="Drink">🍹 ဖျော်ရည် / ယာမကာ (Drink)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">စျေးနှုန်း (ကျပ်)</label>
+                                <input type="number" id="menu-price" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none focus:border-orange-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ဓာတ်ပုံရိုက်ရန်</label>
+                                <div class="flex gap-2 items-center">
+                                    <input type="file" id="menu-file-input" accept="image/*" capture="environment" class="flex-1 text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 cursor-pointer">
+                                    <button type="button" onclick="clearFileInput('menu-file-input')" class="text-xs bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600 font-bold py-2 px-3 rounded-xl transition cursor-pointer">✕ ပုံဖျက်မည်</button>
+                                </div>
+                            </div>
+                            <button onclick="addMenuItem()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">➕ ထည့်သွင်းမည်</button>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold mb-3 text-slate-700">လက်ရှိ စာရင်း</h3>
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold text-sm">
+                                    <th class="p-4">ပုံ</th>
+                                    <th class="p-4">အမည်</th>
+                                    <th class="p-4">အမျိုးအစား</th>
+                                    <th class="p-4 text-right">စျေးနှုန်း</th>
+                                    <th class="p-4 text-center">အခြေအနေ</th>
+                                    <th class="p-4 text-center">လုပ်ဆောင်ချက်</th>
+                                </tr>
+                            </thead>
+                            <tbody id="menu-list-container"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tables-tab" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-6 text-slate-900 border-l-4 border-orange-500 pl-3">စားပွဲဝိုင်းများနှင့် QR Codes များ</h2>
+                    <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 mb-6 max-w-xl">
+                        <h3 class="text-lg font-bold mb-4 text-slate-700">စားပွဲဝိုင်းအသစ် ထည့်ရန်</h3>
+                        <div class="flex gap-3">
+                            <input type="number" id="table-id-input" placeholder="ဝိုင်း ID" class="w-28 border border-slate-300 rounded-xl p-2.5 outline-none">
+                            <input type="text" id="table-number-input" placeholder="ဝိုင်းအမည်" class="flex-1 border border-slate-300 rounded-xl p-2.5 outline-none">
+                            <button onclick="addTable()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 rounded-xl transition cursor-pointer">➕ တိုးမည်</button>
+                        </div>
+                    </div>
+                    <div id="tables-list-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <div id="settings-tab" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-6 text-slate-900 border-l-4 border-orange-500 pl-3">🏪 ဆိုင်အချက်အလက် စီမံရန်</h2>
+                    <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 max-w-xl">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ဆိုင်အမည် (Shop Name)</label>
+                                <input type="text" id="shop-name-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-bold mb-1">အက်ပလီကေးရှင်း သီးမ် (Theme Mode)</label>
+                                <select id="setting-theme" class="w-full border border-slate-300 bg-white rounded-xl p-2.5 outline-none focus:border-orange-500 font-bold text-slate-700">
+                                    <option value="light">☀️ Light Mode (လင်းလင်းကြည်လင်)</option>
+                                    <option value="dark">🌙 Dark Mode (မျက်စိအေးစေသော အမှောင်)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ဆိုင်လိုဂို (Logo)</label>
+                                <div class="flex gap-2 items-center">
+                                    <input type="file" id="shop-logo-file" accept="image/*" class="flex-1 text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-700 cursor-pointer">
+                                    <button type="button" onclick="clearLogoImage()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-3 rounded-xl transition border border-red-200 cursor-pointer">✕ Logo ဖြုတ်မည်</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ပရိုမိုးရှင်း နောက်ခံပုံ (Background Image)</label>
+                                <input type="file" id="shop-bg-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-700 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">လျှော့စျေး ရာခိုင်နှုန်း (Discount %)</label>
+                                <input type="number" id="shop-discount-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">ပရိုမိုးရှင်း ခေါင်းစဉ် (Promotion Title)</label>
+                                <input type="text" id="shop-event-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
+                            </div>
+                            <button onclick="saveShopSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">💾 ဆက်တင်များ အားလုံးသိမ်းမည်</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://riyajawkexkczyirjpig.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpeWFqYXdrZXhrY3p5aXJqcGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDgzMDIsImV4cCI6MjA5ODAyNDMwMn0.adrdzoBddpSgeuWAnxZUWgGBAY-3HFA6_-EnK8bU2j0";
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let tableMap = {};
+        let isFirstLoad = true;
+
+        function playAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc1 = audioCtx.createOscillator();
+                let gain1 = audioCtx.createGain();
+                osc1.type = 'sine'; osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                gain1.gain.setValueAtTime(0.3, audioCtx.currentTime); gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc1.connect(gain1); gain1.connect(audioCtx.destination); osc1.start(); osc1.stop(audioCtx.currentTime + 0.15);
+                setTimeout(() => {
+                    let osc2 = audioCtx.createOscillator(); let gain2 = audioCtx.createGain();
+                    osc2.type = 'sine'; osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gain2.gain.setValueAtTime(0.4, audioCtx.currentTime); gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc2.connect(gain2); gain2.connect(audioCtx.destination); osc2.start(); osc2.stop(audioCtx.currentTime + 0.25);
+                }, 120);
+            } catch (e) {}
+        }
+
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toast-noti');
+            toast.innerText = msg;
+            if (type === "success") { toast.className = "fixed top-5 right-5 z-50 bg-emerald-600 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-emerald-500 transform transition-all duration-300 opacity-100 translate-y-0"; }
+            else if (type === "error") { toast.className = "fixed top-5 right-5 z-50 bg-red-600 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-red-500 transform transition-all duration-300 opacity-100 translate-y-0"; }
+            else { toast.className = "fixed top-5 right-5 z-50 bg-slate-900 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-slate-700 transform transition-all duration-300 opacity-100 translate-y-0"; }
+            if (type !== "loading") { setTimeout(() => { toast.classList.add('opacity-0'); toast.classList.add('translate-y-[-100px]'); }, 2500); }
+        }
+
+        function clearFileInput(id) { document.getElementById(id).value = ''; showToast("📷 ပုံကို ဖျက်လိုက်ပါပြီ။"); }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => { tab.classList.remove('block'); tab.classList.add('hidden'); });
+            const activeTab = document.getElementById(tabId);
+            if(activeTab) { activeTab.classList.remove('hidden'); activeTab.classList.add('block'); }
+            if (tabId === 'menu-tab') fetchMenuItems();
+            if (tabId === 'tables-tab') fetchTables();
+            if (tabId === 'settings-tab') fetchShopSettings();
+        }
+
+        window.onload = async function() { await loadTableMap(); fetchShopSettings(); fetchOrdersRealtime(); };
+
+        async function loadTableMap() {
+            try {
+                const { data } = await supabaseClient.from('restaurant_tables').select('id, table_number');
+                if(data) { data.forEach(t => { tableMap[t.id] = t.table_number; }); }
+            } catch(e) {}
+        }
+
+        function processAndCropImage(file, targetWidth = 400, targetHeight = 400) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image(); img.src = event.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas'); canvas.width = targetWidth; canvas.height = targetHeight;
+                        const ctx = canvas.getContext('2d');
+                        let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+                        if (img.width > img.height) { sourceWidth = img.height; sourceX = (img.width - img.height) / 2; } 
+                        else { sourceHeight = img.width; sourceY = (img.height - img.width) / 2; }
+                        ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+                        canvas.toBlob((blob) => { resolve(blob); }, 'image/jpeg', 0.85);
+                    };
+                };
+            });
+        }
+
+        async function uploadImage(fileInputId, pathPrefix, autoCrop = false) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput || fileInput.files.length === 0) return null;
+            showToast("⏳ ဓာတ်ပုံတင်နေပါသည်...", "loading");
+            let file = fileInput.files[0];
+            if (autoCrop) { try { file = await processAndCropImage(file); } catch(e) {} }
+            const fileName = `${pathPrefix}-${Date.now()}.jpg`;
+            const { data, error } = await supabaseClient.storage.from('pos-images').upload(fileName, file);
+            if (error) throw error;
+            const { data: urlData } = supabaseClient.storage.from('pos-images').getPublicUrl(fileName);
+            return urlData.publicUrl;
+        }
+
+        async function fetchShopSettings() {
+            try {
+                const { data } = await supabaseClient.from('restaurant_settings').select('*').eq('id', 1).single();
+                if (data) {
+                    document.getElementById('shop-name-input').value = data.shop_name || '';
+                    document.getElementById('shop-discount-input').value = data.discount_percentage || 0;
+                    document.getElementById('shop-event-input').value = data.event_title || '';
+                    if(data.theme_mode) { document.getElementById('setting-theme').value = data.theme_mode; }
+                }
+            } catch (err) {}
+        }
+
+        async function clearLogoImage() {
+            if (confirm("❌ လိုဂိုပုံကို ဖြုတ်ပစ်မလားဗျာ?")) {
+                showToast("⏳ လိုဂိုဖြုတ်နေပါသည်...", "loading");
+                await supabaseClient.from('restaurant_settings').update({ logo_url: null }).eq('id', 1);
+                showToast("✅ ဆိုင်လိုဂိုပုံကို ဖြုတ်ပြီးပါပြီဗျာ။", "success");
+            }
+        }
+
+        async function saveShopSettings() {
+            try {
+                const name = document.getElementById('shop-name-input').value;
+                const discount = parseInt(document.getElementById('shop-discount-input').value) || 0;
+                const event = document.getElementById('shop-event-input').value;
+                const themeMode = document.getElementById('setting-theme').value; // 👈 ရွေးချယ်ထားသော Theme Mode တန်ဖိုးယူခြင်း
+                
+                const logoUrl = await uploadImage('shop-logo-file', 'logo', true) || undefined;
+                const bgUrl = await uploadImage('shop-bg-file', 'bg', false) || undefined;
+
+                // Supabase ထဲသို့ theme_mode တန်ဖိုးပါ တစ်ခါတည်း ပို့သိမ်းပေးခြင်း
+                let updateData = { id: 1, shop_name: name, discount_percentage: discount, event_title: event, theme_mode: themeMode };
+                if (logoUrl) updateData.logo_url = logoUrl;
+                if (bgUrl) updateData.bg_image_url = bgUrl;
+
+                const { error } = await supabaseClient.from('restaurant_settings').upsert(updateData);
+                if (error) throw error;
+                showToast("✅ ဆက်တင်များနှင့် သီးမ် (Theme) ပြင်ဆင်မှုများ သိမ်းဆည်းပြီးပါပြီဗျာ။", "success");
+            } catch (err) { showToast("အမှားရှိပါသည်: " + err.message, "error"); }
+        }
+
+        async function fetchMenuItems() {
+            try {
+                const { data } = await supabaseClient.from('menus').select('*').order('id', { ascending: true });
+                const container = document.getElementById('menu-list-container');
+                container.innerHTML = '';
+                if(data) {
+                    data.forEach(item => {
+                        let imgUrl = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=100';
+                        let catText = item.category === 'Drink' ? '🍹 ယာမကာ' : '🍝 အစားအစာ';
+                        container.innerHTML += `
+                            <tr class="border-b border-slate-200 hover:bg-slate-50 text-sm">
+                                <td class="p-4"><img src="${imgUrl}" class="w-10 h-10 object-cover rounded-lg shadow-xs"></td>
+                                <td class="p-4 font-bold">${item.name}</td>
+                                <td class="p-4 text-xs font-bold text-slate-500">${catText}</td>
+                                <td class="p-4 text-right font-bold text-orange-600">${item.price.toLocaleString()} ကျပ်</td>
+                                <td class="p-4 text-center"><span class="px-2 py-1 rounded-md text-xs ${item.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} font-bold">${item.is_available ? 'ရနိုင်သည်' : 'ကုန်ပြီ'}</span></td>
+                                <td class="p-4 text-center space-x-2">
+                                    <button onclick="toggleMenuStatus(${item.id}, ${item.is_available})" class="text-amber-600 hover:text-amber-800 text-xs font-bold cursor-pointer">အခြေအနေပြောင်း</button>
+                                    <button onclick="deleteMenuItem(${item.id})" class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">ဖျက်မည်</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (err) {}
+        }
+
+        async function addMenuItem() {
+            try {
+                const name = document.getElementById('menu-name').value;
+                const price = parseInt(document.getElementById('menu-price').value);
+                const category = document.getElementById('menu-category').value;
+                if(!name || !price) return showToast("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပေးပါဦး။", "error");
+                const imageUrl = await uploadImage('menu-file-input', 'food', true);
+                await supabaseClient.from('menus').insert([{ name, price, category, image_url: imageUrl, is_available: true }]);
+                showToast("✅ ဟင်းပွဲအသစ် ထည့်သွင်းအောင်မြင်ပါသည်ဗျာ။", "success");
+                document.getElementById('menu-name').value = ''; document.getElementById('menu-price').value = ''; document.getElementById('menu-file-input').value = '';
+                fetchMenuItems();
+            } catch(err) { showToast("တင်မရပါ: " + err.message, "error"); }
+        }
+
+        async function toggleMenuStatus(id, currentStatus) { await supabaseClient.from('menus').update({ is_available: !currentStatus }).eq('id', id); fetchMenuItems(); }
+        async function deleteMenuItem(id) { if(confirm('ဖျက်မှာ သေჩာလား?')) { await supabaseClient.from('menus').delete().eq('id', id); fetchMenuItems(); } }
+
+        async function fetchTables() {
+            try {
+                const { data } = await supabaseClient.from('restaurant_tables').select('*').order('id', { ascending: true });
+                const container = document.getElementById('tables-list-container');
+                container.innerHTML = '';
+                if(data) {
+                    data.forEach(t => {
+                        let myHostingUrl = "https://my-pos-menu.tiiny.site"; 
+                        let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myHostingUrl + '?table=' + t.id)}`;
+                        container.innerHTML += `
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center relative shadow-xs flex flex-col items-center">
+                                <div class="text-lg font-black text-slate-800 mb-1">${t.table_number}</div>
+                                <div class="text-xs ${t.status === 'available' ? 'text-emerald-500' : 'text-amber-500'} font-bold mb-3">${t.status === 'available' ? '🟢 အားပါသည်' : '🔴 လူရှိပါသည်'}</div>
+                                <img src="${qrUrl}" class="w-32 h-32 border p-2 rounded-xl bg-slate-50 mb-3 shadow-xs">
+                                <a href="${qrUrl}" target="_blank" class="text-xs font-bold text-orange-500 hover:underline">📥 QR Code</a>
+                                <button onclick="deleteTable(${t.id})" class="absolute top-3 right-3 text-slate-300 hover:text-red-500 font-bold cursor-pointer">✕</button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(err) {}
+        }
+
+        async function addTable() {
+            const id = parseInt(document.getElementById('table-id-input').value); const name = document.getElementById('table-number-input').value;
+            if(!id || !name) return alert('ဖြည့်ပေးပါဗျာ');
+            await supabaseClient.from('restaurant_tables').insert([{ id, table_number: name, status: 'available' }]);
+            document.getElementById('table-id-input').value = ''; document.getElementById('table-number-input').value = '';
+            await loadTableMap(); fetchTables();
+        }
+        async function deleteTable(id) { if(confirm('ဖျက်မလားဗျာ?')) { await supabaseClient.from('restaurant_tables').delete().eq('id', id); await loadTableMap(); fetchTables(); } }
+
+        function fetchOrdersRealtime() {
+            loadOrders();
+            supabaseClient.channel('admin-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => { 
+                if (payload.eventType === 'INSERT' && !isFirstLoad) { playAlertSound(); showToast("🔔 အော်ဒါအသစ်တစ်ခု ရောက်ရှိလာပါပြီဗျာ။", "info"); }
+                loadOrders(); 
+            }).subscribe();
+        }
+
+        async function loadOrders() {
+            try {
+                const { data } = await supabaseClient.from('orders').select('*').order('id', { ascending: false });
+                const container = document.getElementById('orders-container'); container.innerHTML = '';
+                isFirstLoad = false;
+                if(!data || data.length === 0) { container.innerHTML = '<p class="text-slate-400 italic p-4 bg-white rounded-2xl border border-slate-100 col-span-full">လက်ရှိ အော်ဒါ မရှိသေးပါဗျာ။</p>'; return; }
+                data.forEach(order => {
+                    let itemsHtml = ''; let items = []; try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch(e) {}
+                    if(Array.isArray(items)) { items.forEach(i => { itemsHtml += `<div class="flex justify-between text-sm py-1.5 border-b border-slate-100 font-medium"><span>• ${i.name} x ${i.qty}</span><span class="text-slate-500">${(i.price * i.qty).toLocaleString()} ကျပ်</span></div>`; }); }
+                    let tableNameDisplay = tableMap[order.table_id] || `ဝိုင်း ID: ${order.table_id}`;
+                    let statusBadge = order.status === 'pending' ? '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">⏳ အော်ဒါရရှိသည်</span>' : '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">💰 Ngwe Shin Pye</span>';
+                    container.innerHTML += `
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <div><span class="inline-block bg-orange-100 text-orange-800 text-xs font-black px-2.5 py-1 rounded-md mb-1">${tableNameDisplay}</span></div>
+                                    ${statusBadge}
+                                </div>
+                                <div class="space-y-1 my-3 bg-slate-50 p-3 rounded-xl">${itemsHtml}</div>
+                                <div class="flex justify-between items-center font-black text-slate-800 mt-2 pt-2 border-t border-dashed border-slate-200"><span>စုစုပေါင်း:</span><span class="text-orange-600">${parseInt(order.total_price).toLocaleString()} ကျပ်</span></div>
+                            </div>
+                            <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                                ${order.status === 'pending' ? `<button onclick="confirmPayment(${order.id}, ${order.table_id})" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition cursor-pointer">✅ Ngwe Shin Pye</button>` : ''}
+                                <button onclick="deleteOrder(${order.id})" class="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 py-2.5 px-3 rounded-xl transition text-xs font-bold cursor-pointer">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch(err) {}
+        }
+
+        async function confirmPayment(orderId, tableId) { await supabaseClient.from('orders').update({ status: 'paid' }).eq('id', orderId); await supabaseClient.from('restaurant_tables').update({ status: 'available' }).eq('id', tableId); loadOrders(); }
+        async function deleteOrder(id) { if(confirm('ဖျက်မလားဗျာ?')) { await supabaseClient.from('orders').delete().eq('id', id); loadOrders(); } }
+    </script>
+    <style> .vertical-top { vertical-align: top; } </style>
+</body>
+</html>
