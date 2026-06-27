@@ -6,6 +6,18 @@
     <title>POS Admin Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // 🔐 Admin စာမျက်နှာကို ကာကွယ်ရန် စကားဝှက်စစ်ဆေးသည့်စနစ်
+        (function() {
+            let savedPassword = localStorage.getItem('admin_pwd') || 'admin123';
+            let enteredPassword = prompt("ကျေးဇူးပြု၍ ဆိုင်ရှင် Admin စကားဝှက် (Password) ကို ရိုက်ထည့်ပါဗျာ -");
+            if (enteredPassword !== savedPassword) {
+                alert("စကားဝှက် မှားယွင်းနေပါသဖြင့် ဝင်ရောက်ခွင့် မရှိပါဗျာ။");
+                window.location.href = "index.html"; 
+                document.body.innerHTML = "🛑 Access Denied...";
+            }
+        })();
+    </script>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased m-0 p-0">
 
@@ -104,26 +116,38 @@
                                 <label class="block text-sm font-bold mb-1">ဆိုင်အမည် (Shop Name)</label>
                                 <input type="text" id="shop-name-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
                             </div>
-                            
+
                             <div>
-                                <label class="block text-sm font-bold mb-1">အက်ပလီကေးရှင်း သီးမ် (Theme Mode)</label>
-                                <select id="setting-theme" class="w-full border border-slate-300 bg-white rounded-xl p-2.5 outline-none focus:border-orange-500 font-bold text-slate-700">
-                                    <option value="light">☀️ Light Mode (လင်းလင်းကြည်လင်)</option>
-                                    <option value="dark">🌙 Dark Mode (မျက်စိအေးစေသော အမှောင်)</option>
+                                <label class="block text-sm font-bold text-orange-600 mb-1">🔐 Admin စကားဝှက်အသစ် (Password)</label>
+                                <input type="password" id="shop-password-input" placeholder="စကားဝှက်အသစ် ပြောင်းလိုက ရိုက်ပါ" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none focus:border-orange-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold mb-1">🌗 အက်ပလီကေးရှင်း သီးမ် (Theme Mode)</label>
+                                <select id="shop-theme-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none bg-white">
+                                    <option value="light">☀️ Light Mode (အလင်းရောင်)</option>
+                                    <option value="dark">🌙 Dark Mode (ညဘက်အမှောင်)</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-bold mb-1">ဆိုင်လိုဂို (Logo)</label>
-                                <div class="flex gap-2 items-center">
-                                    <input type="file" id="shop-logo-file" accept="image/*" class="flex-1 text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-700 cursor-pointer">
-                                    <button type="button" onclick="clearLogoImage()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-3 rounded-xl transition border border-red-200 cursor-pointer">✕ Logo ဖြုတ်မည်</button>
+                                <div id="current-logo-box" class="mb-2 hidden flex items-center gap-3 bg-slate-50 p-2 rounded-xl border">
+                                    <img id="current-logo-img" src="" class="w-12 h-12 object-cover rounded-lg">
+                                    <button type="button" onclick="deleteCurrentAsset('logo')" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-bold py-1.5 px-3 rounded-lg cursor-pointer">🗑️ ပုံအဟောင်းကို Storage ထဲမှပါ ဖျက်မည်</button>
                                 </div>
+                                <input type="file" id="shop-logo-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-700 cursor-pointer">
                             </div>
+
                             <div>
                                 <label class="block text-sm font-bold mb-1">ပရိုမိုးရှင်း နောက်ခံပုံ (Background Image)</label>
+                                <div id="current-bg-box" class="mb-2 hidden flex items-center gap-3 bg-slate-50 p-2 rounded-xl border">
+                                    <img id="current-bg-img" src="" class="w-12 h-12 object-cover rounded-lg">
+                                    <button type="button" onclick="deleteCurrentAsset('bg')" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-bold py-1.5 px-3 rounded-lg cursor-pointer">🗑️ ပုံအဟောင်းကို Storage ထဲမှပါ ဖျက်မည်</button>
+                                </div>
                                 <input type="file" id="shop-bg-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-700 cursor-pointer">
                             </div>
+
                             <div>
                                 <label class="block text-sm font-bold mb-1">လျှော့စျေး ရာခိုင်နှုန်း (Discount %)</label>
                                 <input type="number" id="shop-discount-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
@@ -132,7 +156,7 @@
                                 <label class="block text-sm font-bold mb-1">ပရိုမိုးရှင်း ခေါင်းစဉ် (Promotion Title)</label>
                                 <input type="text" id="shop-event-input" class="w-full border border-slate-300 rounded-xl p-2.5 outline-none">
                             </div>
-                            <button onclick="saveShopSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">💾 ဆက်တင်များ အားလုံးသိမ်းမည်</button>
+                            <button onclick="saveShopSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">💾 ဆက်တင်များနှင့် Password အားလုံးသိမ်းမည်</button>
                         </div>
                     </div>
                 </div>
@@ -143,17 +167,17 @@
 
     <script>
         const SUPABASE_URL = "https://riyajawkexkczyirjpig.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpeWFqYXdrZXhrY3p5aXJqcGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDgzMDIsImV4cCI6MjA5ODAyNDMwMn0.adrdzoBddpSgeuWAnxZUWgGBAY-3HFA6_-EnK8bU2j0";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpeWFqYXdrZXhrY3p5aXJqcGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDgzMDIsImV4cCI6MjA5ODAyNDMwMn0.adrdzoBddpSgeuWAnxZUWgGBAY-3HFA6_-EnK8bU2j0";
 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let tableMap = {};
         let isFirstLoad = true;
+        let globalSettingsObj = {}; // လက်ရှိ Settings ပုံလင့်ခ်ဟောင်းတွေ သိမ်းထားရန်
 
         function playAlertSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                let osc1 = audioCtx.createOscillator();
-                let gain1 = audioCtx.createGain();
+                let osc1 = audioCtx.createOscillator(); let gain1 = audioCtx.createGain();
                 osc1.type = 'sine'; osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime);
                 gain1.gain.setValueAtTime(0.3, audioCtx.currentTime); gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                 osc1.connect(gain1); gain1.connect(audioCtx.destination); osc1.start(); osc1.stop(audioCtx.currentTime + 0.15);
@@ -167,8 +191,7 @@
         }
 
         function showToast(msg, type = "info") {
-            const toast = document.getElementById('toast-noti');
-            toast.innerText = msg;
+            const toast = document.getElementById('toast-noti'); toast.innerText = msg;
             if (type === "success") { toast.className = "fixed top-5 right-5 z-50 bg-emerald-600 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-emerald-500 transform transition-all duration-300 opacity-100 translate-y-0"; }
             else if (type === "error") { toast.className = "fixed top-5 right-5 z-50 bg-red-600 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-red-500 transform transition-all duration-300 opacity-100 translate-y-0"; }
             else { toast.className = "fixed top-5 right-5 z-50 bg-slate-900 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-2xl border border-slate-700 transform transition-all duration-300 opacity-100 translate-y-0"; }
@@ -193,6 +216,19 @@
                 const { data } = await supabaseClient.from('restaurant_tables').select('id, table_number');
                 if(data) { data.forEach(t => { tableMap[t.id] = t.table_number; }); }
             } catch(e) {}
+        }
+
+        // URL လင့်ခ်ထဲကနေ Storage ဖိုင်အမည်ကို ဆွဲထုတ်ပေးမည့် Helper လုပ်ဆောင်ချက်
+        function getFileNameFromUrl(url) {
+            if (!url) return null;
+            try { return url.split('/').pop(); } catch(e) { return null; }
+        }
+
+        // Supabase Storage ထဲက ပုံကို အပြီးတိုင် ဖျက်ပေးမည့် စနစ်
+        async function deleteImageFromStorage(url) {
+            const fileName = getFileNameFromUrl(url);
+            if (!fileName) return;
+            try { await supabaseClient.storage.from('pos-images').remove([fileName]); } catch(e) {}
         }
 
         function processAndCropImage(file, targetWidth = 400, targetHeight = 400) {
@@ -228,22 +264,43 @@
 
         async function fetchShopSettings() {
             try {
-                const { data } = await supabaseClient.from('restaurant_settings').select('*').eq('id', 1).single();
+                const { data } = await supabaseClient.from('pos-images').select('*').eq('id', 1).single();
                 if (data) {
+                    globalSettingsObj = data;
                     document.getElementById('shop-name-input').value = data.shop_name || '';
                     document.getElementById('shop-discount-input').value = data.discount_percentage || 0;
                     document.getElementById('shop-event-input').value = data.event_title || '';
-                    if(data.theme_mode) { document.getElementById('setting-theme').value = data.theme_mode; }
+                    document.getElementById('shop-theme-input').value = data.theme_mode || 'light';
+                    document.getElementById('shop-password-input').value = localStorage.getItem('admin_pwd') || 'admin123';
+
+                    // လက်ရှိ လိုဂိုပုံရှိရင် ပြသရန်
+                    if (data.logo_url) {
+                        document.getElementById('current-logo-img').src = data.logo_url;
+                        document.getElementById('current-logo-box').classList.remove('hidden');
+                    } else { document.getElementById('current-logo-box').classList.add('hidden'); }
+
+                    // လက်ရှိ နောက်ခံပုံရှိရင် ပြသရန်
+                    if (data.bg_image_url) {
+                        document.getElementById('current-bg-img').src = data.bg_image_url;
+                        document.getElementById('current-bg-box').classList.remove('hidden');
+                    } else { document.getElementById('current-bg-box').classList.add('hidden'); }
                 }
             } catch (err) {}
         }
 
-        async function clearLogoImage() {
-            if (confirm("❌ လိုဂိုပုံကို ဖြုတ်ပစ်မလားဗျာ?")) {
-                showToast("⏳ လိုဂိုဖြုတ်နေပါသည်...", "loading");
+        // ဆက်တင်ထဲက Logo သို့မဟုတ် BG ပုံကို Storage ထဲကပါ ဖျက်ပေးမည့် စနစ်
+        async function deleteCurrentAsset(type) {
+            if (!confirm("❌ ၎င်းပုံဟောင်းကို Supabase Storage ထဲကပါ လုံးဝ အပြီးတိုင် ဖျက်ပစ်မလားဗျာ?")) return;
+            showToast("⏳ ဓာတ်ပုံဖျက်နေပါသည်...", "loading");
+            if (type === 'logo' && globalSettingsObj.logo_url) {
+                await deleteImageFromStorage(globalSettingsObj.logo_url);
                 await supabaseClient.from('restaurant_settings').update({ logo_url: null }).eq('id', 1);
-                showToast("✅ ဆိုင်လိုဂိုပုံကို ဖြုတ်ပြီးပါပြီဗျာ။", "success");
+            } else if (type === 'bg' && globalSettingsObj.bg_image_url) {
+                await deleteImageFromStorage(globalSettingsObj.bg_image_url);
+                await supabaseClient.from('restaurant_settings').update({ bg_image_url: null }).eq('id', 1);
             }
+            showToast("✅ Storage ထဲမှ ပုံကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။", "success");
+            fetchShopSettings();
         }
 
         async function saveShopSettings() {
@@ -251,27 +308,34 @@
                 const name = document.getElementById('shop-name-input').value;
                 const discount = parseInt(document.getElementById('shop-discount-input').value) || 0;
                 const event = document.getElementById('shop-event-input').value;
-                const themeMode = document.getElementById('setting-theme').value; // 👈 ရွေးချယ်ထားသော Theme Mode တန်ဖိုးယူခြင်း
-                
-                const logoUrl = await uploadImage('shop-logo-file', 'logo', true) || undefined;
-                const bgUrl = await uploadImage('shop-bg-file', 'bg', false) || undefined;
+                const theme = document.getElementById('shop-theme-input').value;
+                const newPwd = document.getElementById('shop-password-input').value;
 
-                // Supabase ထဲသို့ theme_mode တန်ဖိုးပါ တစ်ခါတည်း ပို့သိမ်းပေးခြင်း
-                let updateData = { id: 1, shop_name: name, discount_percentage: discount, event_title: event, theme_mode: themeMode };
-                if (logoUrl) updateData.logo_url = logoUrl;
-                if (bgUrl) updateData.bg_image_url = bgUrl;
+                // 🔐 စကားဝှက်အသစ်ကို သိမ်းဆည်းခြင်း
+                if (newPwd) { localStorage.setItem('admin_pwd', newPwd); }
+                
+                // ပုံအသစ်တင်ရင် ပုံဟောင်းကို Storage ထဲကပါ အလိုအလျောက် သွားဖျက်မည်
+                const newLogoUrl = await uploadImage('shop-logo-file', 'logo', true);
+                if (newLogoUrl && globalSettingsObj.logo_url) { await deleteImageFromStorage(globalSettingsObj.logo_url); }
+
+                const newBgUrl = await uploadImage('shop-bg-file', 'bg', false);
+                if (newBgUrl && globalSettingsObj.bg_image_url) { await deleteImageFromStorage(globalSettingsObj.bg_image_url); }
+
+                let updateData = { id: 1, shop_name: name, discount_percentage: discount, event_title: event, theme_mode: theme };
+                if (newLogoUrl) updateData.logo_url = newLogoUrl;
+                if (newBgUrl) updateData.bg_image_url = newBgUrl;
 
                 const { error } = await supabaseClient.from('restaurant_settings').upsert(updateData);
                 if (error) throw error;
-                showToast("✅ ဆက်တင်များနှင့် သီးမ် (Theme) ပြင်ဆင်မှုများ သိမ်းဆည်းပြီးပါပြီဗျာ။", "success");
+                showToast("✅ ဆက်တင်များနှင့် စကားဝှက်ကို သိမ်းဆည်းပြီးပါပြီဗျာ။", "success");
+                fetchShopSettings();
             } catch (err) { showToast("အမှားရှိပါသည်: " + err.message, "error"); }
         }
 
         async function fetchMenuItems() {
             try {
                 const { data } = await supabaseClient.from('menus').select('*').order('id', { ascending: true });
-                const container = document.getElementById('menu-list-container');
-                container.innerHTML = '';
+                const container = document.getElementById('menu-list-container'); container.innerHTML = '';
                 if(data) {
                     data.forEach(item => {
                         let imgUrl = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=100';
@@ -285,7 +349,7 @@
                                 <td class="p-4 text-center"><span class="px-2 py-1 rounded-md text-xs ${item.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} font-bold">${item.is_available ? 'ရနိုင်သည်' : 'ကုန်ပြီ'}</span></td>
                                 <td class="p-4 text-center space-x-2">
                                     <button onclick="toggleMenuStatus(${item.id}, ${item.is_available})" class="text-amber-600 hover:text-amber-800 text-xs font-bold cursor-pointer">အခြေအနေပြောင်း</button>
-                                    <button onclick="deleteMenuItem(${item.id})" class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">ဖျက်မည်</button>
+                                    <button onclick="deleteMenuItem(${item.id}, '${item.image_url}')" class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">ဖျက်မည်</button>
                                 </td>
                             </tr>
                         `;
@@ -309,16 +373,25 @@
         }
 
         async function toggleMenuStatus(id, currentStatus) { await supabaseClient.from('menus').update({ is_available: !currentStatus }).eq('id', id); fetchMenuItems(); }
-        async function deleteMenuItem(id) { if(confirm('ဖျက်မှာ သေჩာလား?')) { await supabaseClient.from('menus').delete().eq('id', id); fetchMenuItems(); } }
+        
+        // 🔥 [စနစ်သစ်] မီနူးဖျက်လိုက်ရင် ဓာတ်ပုံကိုပါ Storage ထဲက တစ်ပါတည်း ဖျက်ပေးမည့်စနစ်
+        async function deleteMenuItem(id, imageUrl) {
+            if(confirm('ယခုမီနူးကို ဖျက်ပစ်ပါက Supabase Storage ထဲက ဓာတ်ပုံပါ အပြီးတိုင် ပျက်သွားမည် ဖြစ်သည်။ သေချာပါသလားဗျာ?')) {
+                showToast("⏳ စာရင်းနှင့် ဓာတ်ပုံများကို ဖျက်နေပါသည်...", "loading");
+                if (imageUrl) { await deleteImageFromStorage(imageUrl); } // ပုံအရင်ဖျက်သည်
+                await supabaseClient.from('menus').delete().eq('id', id); // Database စာရင်းဖျက်သည်
+                showToast("🗑️ မီနူးနှင့် ဓာတ်ပုံကို Storage ထဲမှ အပြီးဖျက်ပြီးပါပြီ။", "success");
+                fetchMenuItems();
+            }
+        }
 
         async function fetchTables() {
             try {
                 const { data } = await supabaseClient.from('restaurant_tables').select('*').order('id', { ascending: true });
-                const container = document.getElementById('tables-list-container');
-                container.innerHTML = '';
+                const container = document.getElementById('tables-list-container'); container.innerHTML = '';
                 if(data) {
                     data.forEach(t => {
-                        let myHostingUrl = "https://my-pos-menu.tiiny.site"; 
+                        let myHostingUrl = "https://shwemezanet-wifi.github.io/-"; 
                         let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myHostingUrl + '?table=' + t.id)}`;
                         container.innerHTML += `
                             <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center relative shadow-xs flex flex-col items-center">
@@ -354,8 +427,7 @@
         async function loadOrders() {
             try {
                 const { data } = await supabaseClient.from('orders').select('*').order('id', { ascending: false });
-                const container = document.getElementById('orders-container'); container.innerHTML = '';
-                isFirstLoad = false;
+                const container = document.getElementById('orders-container'); container.innerHTML = ''; isFirstLoad = false;
                 if(!data || data.length === 0) { container.innerHTML = '<p class="text-slate-400 italic p-4 bg-white rounded-2xl border border-slate-100 col-span-full">လက်ရှိ အော်ဒါ မရှိသေးပါဗျာ။</p>'; return; }
                 data.forEach(order => {
                     let itemsHtml = ''; let items = []; try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch(e) {}
