@@ -389,13 +389,17 @@
             }
         }
 
-        async function fetchTables() {
+                async function fetchTables() {
             try {
                 const { data } = await supabaseClient.from('restaurant_tables').select('*').order('id', { ascending: true });
                 const container = document.getElementById('tables-list-container'); container.innerHTML = '';
                 if(data) {
                     data.forEach(t => {
-                        let myHostingUrl = window.location.href.replace('admin.html', 'index.html');
+                        // 🌍 [ပြင်ဆင်ချက်] မည်သည့်အခြေအနေမျိုးတွင်မဆို index.html ဆီသို့ တိုက်ရိုက်သွားရန် လမ်းကြောင်းကို သေချာအောင် လုပ်ခြင်း
+                        let currentUrl = window.location.href;
+                        let baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+                        let myHostingUrl = baseUrl + '/index.html';
+                        
                         let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myHostingUrl + '?table=' + t.id)}`;
                         container.innerHTML += `
                             <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center relative shadow-xs flex flex-col items-center">
