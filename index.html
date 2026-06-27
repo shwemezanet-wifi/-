@@ -3,287 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Menu Pro</title>
+    <title>Shwe Me POS - Menu</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body id="app-body" class="bg-slate-100 font-sans text-slate-800 antialiased m-0 p-0 pb-32 transition-colors duration-300">
+<body class="bg-slate-50 font-sans text-slate-800 m-0 p-0 transition-colors duration-300" id="body-layout">
 
-    <div id="hero-bg" class="bg-cover bg-center h-64 relative flex items-center justify-center text-center px-4 transition-all duration-500 shadow-lg" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=600');">
-        
-        <div class="flex flex-col items-center z-20 text-white mt-2">
+    <div id="receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 text-center relative animate-fade-in">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🎉</div>
+            <h3 class="text-xl font-black text-slate-900 mb-1">သုံးဆောင်မှုအတွက် ကျေးဇူးတင်ပါသည်</h3>
+            <p class="text-xs text-slate-500 mb-4" id="receipt-date"></p>
             
-            <div id="shop-logo-container" class="w-24 h-24 bg-white/40 p-1 rounded-full shadow-[0_0_25px_rgba(255,255,255,0.8)] mb-2 border-2 border-white hidden backdrop-blur-md transition-all duration-300">
-                <img id="shop-logo" src="" class="w-full h-full object-cover rounded-full">
+            <div class="bg-slate-50 p-4 rounded-2xl text-left space-y-2 mb-4 text-sm" id="receipt-items-box"></div>
+            <div class="flex justify-between font-black text-lg border-t border-dashed pt-3 mb-5">
+                <span>စုစုပေါင်းကျသင့်ငွေ:</span>
+                <span class="text-emerald-600" id="receipt-total-price">0 ကျပ်</span>
             </div>
-            
-            <h1 id="shop-name" class="text-2xl font-black tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">မမဲ ကြက်ပေါင်းခေါက်ဆွဲ</h1>
-            <p id="promo-title" class="text-xs text-orange-400 font-black mt-1.5 bg-black/50 px-4 py-1 rounded-full backdrop-blur-md shadow-md"></p>
+            <button onclick="closeReceiptAndGoHome()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">🏠 မီနူးသို့ ပြန်သွားမည်</button>
         </div>
     </div>
 
-    <div id="tab-bar" class="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200 z-40 flex justify-center p-3 gap-2 transition-colors duration-300">
-        <button onclick="filterCategory('All')" id="tab-All" class="px-4 py-2 rounded-full font-black text-xs bg-orange-500 text-white transition cursor-pointer shadow-md shadow-orange-500/20">📋 အားလုံး</button>
-        <button onclick="filterCategory('Food')" id="tab-Food" class="px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer">🍝 အစားအစာ</button>
-        <button onclick="filterCategory('Drink')" id="tab-Drink" class="px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer">🍹 ဖျော်ရည်/ယာမကာ</button>
-    </div>
-
-    <div class="max-w-xl mx-auto px-4 mt-6">
-        <div id="table-badge-container" class="mb-5 hidden text-center"><span id="table-badge" class="inline-block bg-orange-500 text-white text-xs font-black px-5 py-2 rounded-full shadow-lg"></span></div>
+    <div class="max-w-md mx-auto min-h-screen flex flex-col justify-between bg-white shadow-xl relative pb-24">
         
-        <div id="my-active-orders" class="mb-6 space-y-3 hidden">
-            <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider">🔔 မိမိမှာယူထားသော အခြေအနေ</h4>
-            <div id="active-orders-container"></div>
-        </div>
-
-        <h4 id="menu-title-text" class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">🍽️ မီနူး စာရင်း</h4>
-        
-        <div id="menu-container" class="grid grid-cols-2 gap-4"></div>
-    </div>
-
-    <div id="cart-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl">
-        <div class="mb-3 max-h-32 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-100" id="cart-summary-list"></div>
-        <div class="flex justify-between items-center">
-            <div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">စုစုပေါင်း ကျသင့်ငွေ</div>
-                <div id="cart-total-text" class="text-lg font-black text-slate-900"><span id="cart-total">0</span> ကျပ်</div>
+        <div id="shop-banner" class="bg-slate-900 text-white p-6 rounded-b-3xl relative overflow-hidden bg-cover bg-center min-h-40 flex flex-col justify-end">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"></div>
+            <div class="relative z-10 flex items-center gap-4">
+                <img id="shop-logo" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=100" class="w-16 h-16 object-cover rounded-2xl border-2 border-white shadow-md hidden">
+                <div>
+                    <h2 id="shop-name" class="text-xl font-black tracking-wide">Welcome to Our Shop</h2>
+                    <span id="table-badge" class="inline-block bg-orange-500 text-white font-black text-xs px-2.5 py-0.5 rounded-md mt-1">ဝိုင်းနံပါတ် စစ်ဆေးနေဆဲ...</span>
+                </div>
             </div>
-            <button onclick="submitOrder()" class="bg-orange-500 hover:bg-orange-600 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-orange-500/30 transition cursor-pointer text-xs">🚀 အော်ဒါလှမ်းမှာမည်</button>
         </div>
+
+        <div id="promo-banner" class="mx-4 mt-4 bg-orange-500 text-white p-4 rounded-2xl hidden">
+            <h4 id="promo-title" class="font-black text-sm">PROMOTION</h4>
+            <p class="text-xs opacity-90">ယနေ့မှာယူမှုအားလုံးကို <span id="promo-discount" class="font-bold">0</span>% လျှော့စျေးပေးနေပါပြီဗျာ!</p>
+        </div>
+
+        <div class="p-4 flex-1">
+            <h3 class="font-black text-lg text-slate-800 mb-4 border-l-4 border-orange-500 pl-2">🍝 မီနူးစာရင်းများ</h3>
+            <div id="menu-container" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <div id="cart-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-xl flex justify-between items-center z-40 transform translate-y-24 opacity-0 transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div class="bg-orange-500 w-10 h-10 rounded-xl flex items-center justify-center font-black" id="cart-count">0</div>
+                <div>
+                    <div class="text-xs text-slate-400">စုစုပေါင်း ကျပ်</div>
+                    <div class="font-black text-sm" id="cart-total">0</div>
+                </div>
+            </div>
+            <button onclick="orderNow()" class="bg-orange-500 hover:bg-orange-600 font-bold text-xs py-2.5 px-4 rounded-xl transition cursor-pointer">🛒 အော်ဒါတင်မည်</button>
+        </div>
+
     </div>
 
     <script>
         const SUPABASE_URL = "https://riyajawkexkczyirjpig.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpeWFqYXdrZXhrY3p5aXJqcGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDgzMDIsImV4cCI6MjA5ODAyNDMwMn0.adrdzoBddpSgeuWAnxZUWgGBAY-3HFA6_-EnK8bU2j0";
-
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let cart = {}; let allMenuItems = []; let currentCategory = 'All'; let myTableNumber = "မသိရှိပါ";
-        let currentTheme = 'light';
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const tableId = urlParams.get('table') ? parseInt(urlParams.get('table')) : null;
 
-        window.onload = async function() {
-            if(tableId) { await fetchTableInfo(); }
-            await fetchShopInfo();
+        let tableId = null;
+        let cart = {};
+        let discountPercent = 0;
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            tableId = parseInt(urlParams.get('table')) || null;
+            
+            if(!tableId) {
+                document.getElementById('table-badge').innerText = "❌ စားပွဲဝိုင်း QR မှတစ်ဆင့် ဝင်ရောက်ပေးပါဗျာ။";
+                document.getElementById('table-badge').className = "inline-block bg-red-500 text-white font-black text-xs px-2.5 py-0.5 rounded-md mt-1";
+            } else {
+                fetchTableInfo();
+                listenToOrderUpdate(); // Admin ငွေရှင်းတာ စောင့်ကြည့်မယ့် Real-time function
+            }
+            fetchShopSettings();
             fetchMenus();
-            if(tableId) { fetchMyOrdersRealtime(); }
         };
 
         async function fetchTableInfo() {
             try {
                 const { data } = await supabaseClient.from('restaurant_tables').select('table_number').eq('id', tableId).single();
-                if(data) {
-                    myTableNumber = data.table_number;
-                    document.getElementById('table-badge').innerText = `🪑 စားပွဲဝိုင်း - ${myTableNumber}`;
-                    document.getElementById('table-badge-container').classList.remove('hidden');
-                }
+                if(data) { document.getElementById('table-badge').innerText = `🪑 ${data.table_number}`; }
             } catch(e) {}
         }
 
-        async function fetchShopInfo() {
+        async function fetchShopSettings() {
             try {
                 const { data } = await supabaseClient.from('restaurant_settings').select('*').eq('id', 1).single();
                 if(data) {
-                    if(data.shop_name) document.getElementById('shop-name').innerText = data.shop_name;
-                    if(data.event_title) { document.getElementById('promo-title').innerText = `🎉 ${data.event_title}`; }
-                    
-                    if(data.theme_mode) {
-                        currentTheme = data.theme_mode;
+                    document.getElementById('shop-name').innerText = data.shop_name || "Shwe Me POS";
+                    if(data.logo_url) {
+                        const img = document.getElementById('shop-logo'); img.src = data.logo_url; img.classList.remove('hidden');
                     }
-                    applyTheme(currentTheme);
-                    
-                    if(data.bg_image_url || data.bg_image) {
-                        let bg = data.bg_image_url || data.bg_image;
-                        let overlay = currentTheme === 'dark' ? 'rgba(15,23,42,0.8), rgba(15,23,42,0.85)' : 'rgba(0,0,0,0.45), rgba(0,0,0,0.55)';
-                        document.getElementById('hero-bg').style.backgroundImage = `linear-gradient(${overlay}), url('${bg}')`; 
+                    if(data.bg_image_url) {
+                        document.getElementById('shop-banner').style.backgroundImage = `url('${data.bg_image_url}')`;
                     }
-                    
-                    let logo = data.logo_url || data.shop_logo || data.logo;
-                    if(logo) {
-                        document.getElementById('shop-logo').src = logo;
-                        document.getElementById('shop-logo-container').classList.remove('hidden');
+                    if(data.discount_percentage > 0) {
+                        discountPercent = data.discount_percentage;
+                        document.getElementById('promo-discount').innerText = discountPercent;
+                        document.getElementById('promo-banner').classList.remove('hidden');
+                    }
+                    if(data.theme_mode === 'dark') {
+                        document.getElementById('body-layout').className = "bg-slate-900 text-slate-100 m-0 p-0";
                     }
                 }
             } catch(e) {}
-        }
-
-        function applyTheme(theme) {
-            const body = document.getElementById('app-body');
-            const tabBar = document.getElementById('tab-bar');
-            const menuTitle = document.getElementById('menu-title-text');
-            const cartBar = document.getElementById('cart-bar');
-            const cartTotalText = document.getElementById('cart-total-text');
-            const cartSummary = document.getElementById('cart-summary-list');
-            const logoContainer = document.getElementById('shop-logo-container');
-
-            if(theme === 'dark') {
-                body.className = "bg-slate-900 font-sans text-slate-100 antialiased m-0 p-0 pb-32 transition-colors duration-300";
-                tabBar.className = "sticky top-0 bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-800 z-40 flex justify-center p-3 gap-2 transition-colors duration-300";
-                menuTitle.className = "text-xs font-black text-slate-500 uppercase tracking-wider mb-3";
-                cartBar.className = "fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-4 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl text-white";
-                cartTotalText.className = "text-lg font-black text-orange-400";
-                cartSummary.className = "mb-3 max-h-32 overflow-y-auto bg-slate-950 p-2 rounded-xl border border-slate-800";
-                
-                // ✨ Dark Mode မှာ လိုဂိုကို ပိုလင်းသွားစေရန် အဖြူရောင် Glow အရှိန်ကို မြှင့်တင်ပေးလိုက်ပါသည်
-                if(logoContainer) logoContainer.className = "w-24 h-24 bg-white/20 p-1 rounded-full shadow-[0_0_35px_rgba(255,255,255,0.95)] mb-2 border-2 border-white/60 block backdrop-blur-md transition-all duration-300";
-            } else {
-                body.className = "bg-slate-50 font-sans text-slate-800 antialiased m-0 p-0 pb-32 transition-colors duration-300";
-                tabBar.className = "sticky top-0 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200 z-40 flex justify-center p-3 gap-2 transition-colors duration-300";
-                menuTitle.className = "text-xs font-black text-slate-400 uppercase tracking-wider mb-3";
-                cartBar.className = "fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-slate-200 shadow-2xl z-50 transform translate-y-full transition-all duration-300 max-w-xl mx-auto rounded-t-2xl text-slate-800";
-                cartTotalText.className = "text-lg font-black text-slate-900";
-                cartSummary.className = "mb-3 max-h-32 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-100";
-                
-                // Light Mode မှာ ပုံမှန် အလင်းရောင်အတိုင်း ထားရှိမည်
-                if(logoContainer) logoContainer.className = "w-24 h-24 bg-white/30 p-1 rounded-full shadow-lg mb-2 border border-white/40 block backdrop-blur-md transition-all duration-300";
-            }
-            updateCategoryTabButtons();
-        }
-
-        function updateCategoryTabButtons() {
-            ['All', 'Food', 'Drink'].forEach(c => {
-                const btn = document.getElementById(`tab-${c}`);
-                if(!btn) return;
-                if(c === currentCategory) { 
-                    btn.className = "px-4 py-2 rounded-full font-black text-xs bg-orange-500 text-white cursor-pointer shadow-md"; 
-                } else { 
-                    btn.className = currentTheme === 'dark' 
-                        ? "px-4 py-2 rounded-full font-black text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition cursor-pointer"
-                        : "px-4 py-2 rounded-full font-black text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition cursor-pointer";
-                }
-            });
         }
 
         async function fetchMenus() {
             try {
                 const { data } = await supabaseClient.from('menus').select('*').eq('is_available', true);
-                if(data) { allMenuItems = data; renderMenu(); }
+                const container = document.getElementById('menu-container'); container.innerHTML = '';
+                if(data) {
+                    data.forEach(m => {
+                        let imgUrl = m.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=150';
+                        container.innerHTML += `
+                            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden flex flex-col justify-between p-3 text-slate-800">
+                                <img src="${imgUrl}" class="w-full h-28 object-cover rounded-xl mb-2 shadow-inner">
+                                <div>
+                                    <h4 class="font-bold text-sm leading-tight mb-1">${m.name}</h4>
+                                    <div class="text-orange-600 font-black text-xs mb-2">${m.price.toLocaleString()} ကျပ်</div>
+                                </div>
+                                <div class="flex items-center justify-between gap-1 bg-slate-50 p-1 rounded-xl">
+                                    <button onclick="updateQty(${m.id}, '${m.name}', ${m.price}, -1)" class="w-7 h-7 bg-white rounded-lg shadow-xs font-black text-slate-600">-</button>
+                                    <span id="qty-${m.id}" class="font-black text-xs">0</span>
+                                    <button onclick="updateQty(${m.id}, '${m.name}', ${m.price}, 1)" class="w-7 h-7 bg-white rounded-lg shadow-xs font-black text-orange-500">+</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
             } catch(e) {}
         }
 
-        function filterCategory(cat) {
-            currentCategory = cat;
-            updateCategoryTabButtons();
-            renderMenu();
-        }
-
-        function renderMenu() {
-            const container = document.getElementById('menu-container');
-            container.innerHTML = '';
-            const filtered = currentCategory === 'All' ? allMenuItems : allMenuItems.filter(i => i.category === currentCategory);
-            
-            filtered.forEach(item => {
-                let imgUrl = item.image_url || item.menu_image || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200';
-                let qty = cart[item.id] ? cart[item.id].qty : 0;
-                
-                let cardBg = currentTheme === 'dark' ? 'bg-slate-800 border-slate-700/60 text-white' : 'bg-white border-slate-200/60 text-slate-800';
-                let btnBg = currentTheme === 'dark' ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-slate-50 border-slate-200 text-orange-600';
-                let priceColor = currentTheme === 'dark' ? 'text-orange-400' : 'text-orange-600';
-
-                container.innerHTML += `
-                    <div class="${cardBg} rounded-2xl border shadow-xs overflow-hidden flex flex-col justify-between transition-all duration-200 active:scale-98">
-                        <img src="${imgUrl}" class="w-full h-32 object-cover">
-                        <div class="p-3">
-                            <h3 class="font-black text-xs leading-tight min-h-[32px]">${item.name}</h3>
-                            <div class="${priceColor} font-black text-xs mt-1">${parseInt(item.price).toLocaleString()} ကျပ်</div>
-                            <div class="mt-3">
-                                ${qty === 0 ? 
-                                    `<button onclick="updateCart(${item.id}, 1, '${item.name}', ${item.price})" class="w-full ${btnBg} font-bold py-2 rounded-xl border text-xs cursor-pointer">➕ မှာယူမည်</button>` :
-                                    `<div class="flex items-center justify-between bg-orange-500 text-white rounded-xl p-1 font-black text-xs">
-                                        <button onclick="updateCart(${item.id}, -1)" class="px-2.5 py-0.5 text-sm cursor-pointer"> - </button>
-                                        <span>${qty}</span>
-                                        <button onclick="updateCart(${item.id}, 1)" class="px-2.5 py-0.5 text-sm cursor-pointer"> + </button>
-                                    </div>`
-                                }
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function updateCart(id, change, name = '', price = 0) {
-            if(!cart[id]) { cart[id] = { id, name, price, qty: 0 }; }
+        function updateQty(id, name, price, change) {
+            if(!cart[id]) cart[id] = { name, price, qty: 0 };
             cart[id].qty += change;
-            if(cart[id].qty <= 0) { delete cart[id]; }
-            renderMenu();
-            updateCartBar();
-        }
-
-        function updateCartBar() {
-            let total = 0; let count = 0;
-            const summaryList = document.getElementById('cart-summary-list');
-            summaryList.innerHTML = '';
-            let borderClass = currentTheme === 'dark' ? 'border-slate-800' : 'border-slate-100';
-
-            Object.values(cart).forEach(i => { 
-                total += (i.price * i.qty); count += i.qty; 
-                summaryList.innerHTML += `<div class="flex justify-between text-xs py-1 border-b ${borderClass} font-bold"><span>• ${i.name} x ${i.qty}</span><span class="text-orange-400">${(i.price * i.qty).toLocaleString()} ကျပ်</span></div>`;
-            });
-
-            document.getElementById('cart-total').innerText = total.toLocaleString();
-            const bar = document.getElementById('cart-bar');
-            if(count > 0) { bar.classList.remove('translate-y-full'); } else { bar.classList.add('translate-y-full'); }
-        }
-
-        async function submitOrder() {
-            if(!tableId) return alert('ကျေးဇူးပြု၍ စားပွဲဝိုင်း QR Code ကို အရင် Scan ဖတ်ပေးပါဗျာ။');
-            const itemsArray = Object.values(cart);
-            let total = 0; itemsArray.forEach(i => total += (i.price * i.qty));
+            if(cart[id].qty <= 0) delete cart[id];
             
-            try {
-                const { error } = await supabaseClient.from('orders').insert([{ table_id: tableId, items: JSON.stringify(itemsArray), total_price: total, status: 'pending' }]);
-                if(error) throw error;
-                await supabaseClient.from('restaurant_tables').update({ status: 'occupied' }).eq('id', tableId);
-                alert('အော်ဒါလှမ်းမှာတာ အောင်မြင်ပါသည်ဗျာ။');
-                cart = {}; updateCartBar(); renderMenu(); loadMyOrders();
-            } catch(e) { alert('မှာယူ၍မရပါ: ' + e.message); }
+            const qtyElement = document.getElementById(`qty-${id}`);
+            if(qtyElement) qtyElement.innerText = cart[id] ? cart[id].qty : 0;
+            
+            renderCartBar();
         }
 
-        function fetchMyOrdersRealtime() {
-            loadMyOrders();
-            supabaseClient.channel('my-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `table_id=eq.${tableId}` }, () => { loadMyOrders(); }).subscribe();
-        }
-
-        async function loadMyOrders() {
-            try {
-                const { data } = await supabaseClient.from('orders').select('*').eq('table_id', tableId).order('id', { ascending: false });
-                const container = document.getElementById('active-orders-container');
-                const section = document.getElementById('my-active-orders');
-                container.innerHTML = '';
-
-                if(!data || data.length === 0) { section.classList.add('hidden'); return; }
-                section.classList.remove('hidden');
-
-                data.forEach(order => {
-                    let items = []; try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch(e){}
-                    let itemsText = items.map(i => `${i.name} (${i.qty})`).join(', ');
-                    let statusText = order.status === 'pending' ? '⏳ စောင့်ဆိုင်းဆဲ' : '💰 ငွေရှင်းပြီးပါပြီ';
-                    
-                    let cardStyle = currentTheme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-                    let statusColor = order.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400';
-
-                    container.innerHTML += `
-                        <div class="${cardStyle} p-3 rounded-xl border flex justify-between items-center shadow-xs">
-                            <div class="flex-1 pr-2">
-                                <div class="text-xs font-black leading-tight">${itemsText}</div>
-                                <div class="text-[11px] font-bold text-slate-400 mt-1">စုစုပေါင်း: ${parseInt(order.total_price).toLocaleString()} ကျပ်</div>
-                                <span class="inline-block mt-1 text-[10px] font-black px-2 py-0.5 rounded-sm ${statusColor}">${statusText}</span>
-                            </div>
-                            ${order.status === 'pending' ? `<button onclick="cancelMyOrder(${order.id})" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs px-3 py-2 rounded-lg border border-red-500/20 cursor-pointer">❌ ဖျက်မည်</button>` : ''}
-                        </div>
-                    `;
-                });
-            } catch(e) {}
-        }
-
-        async function cancelMyOrder(orderId) {
-            if(confirm('ယခုအော်ဒါကို ပြန်ဖျက်မှာ သေချာပါသလားဗျာ?')) {
-                await supabaseClient.from('orders').delete().eq('id', orderId);
-                alert('အော်ဒါကို အောင်မြင်စွာ ပြန်ဖျက်ပြီးပါပြီ။');
-                loadMyOrders();
+        function renderCartBar() {
+            let totalItems = 0; let totalPrice = 0;
+            for(let id in cart) { totalItems += cart[id].qty; totalPrice += (cart[id].price * cart[id].qty); }
+            
+            if(discountPercent > 0) { totalPrice = totalPrice - (totalPrice * (discountPercent/100)); }
+            
+            const bar = document.getElementById('cart-bar');
+            if(totalItems > 0) {
+                document.getElementById('cart-count').innerText = totalItems;
+                document.getElementById('cart-total').innerText = totalPrice.toLocaleString();
+                bar.className = "fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-xl flex justify-between items-center z-40 transform translate-y-0 opacity-100 transition-all duration-300";
+            } else {
+                bar.className = "fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-xl flex justify-between items-center z-40 transform translate-y-24 opacity-0 transition-all duration-300";
             }
+        }
+
+        async function orderNow() {
+            if(!tableId) return alert("ဝိုင်းနံပါတ် မရှိပါသဖြင့် အော်ဒါတင်၍ မရပါဗျာ။");
+            let itemsArray = []; let totalPrice = 0;
+            for(let id in cart) { itemsArray.push(cart[id]); totalPrice += (cart[id].price * cart[id].qty); }
+            if(discountPercent > 0) { totalPrice = totalPrice - (totalPrice * (discountPercent/100)); }
+
+            try {
+                // 1. Order တင်မည်
+                await supabaseClient.from('orders').insert([{ table_id: tableId, items: itemsArray, total_price: totalPrice, status: 'pending' }]);
+                // 2. စားပွဲဝိုင်း အခြေအနေကို 'occupied' (လူရှိသည်) ဟု ပြောင်းမည်
+                await supabaseClient.from('restaurant_tables').update({ status: 'occupied' }).eq('id', tableId);
+                
+                alert("🎉 အော်ဒါ တင်သွင်းမှု အောင်မြင်ပါပြီဗျာ! ခေတ္တစောင့်ဆိုင်းပေးပါရန်။");
+                // Cart ကို Reset လုပ်မည်
+                cart = {}; renderCartBar(); fetchMenus();
+            } catch(e) { alert("အော်ဒါတင်မရပါ: " + e.message); }
+        }
+
+        // 🔥 [စနစ်သစ်] Admin ဘက်က ငွေရှင်းလိုက်ရင် Customer ဘက်မှာ Auto Logout ဖြစ်ပြီး ဘောင်ချာပြမည့် စနစ်
+        function listenToOrderUpdate() {
+            supabaseClient.channel(`table-orders-${tableId}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `table_id=eq.${tableId}` }, (payload) => {
+                const updatedOrder = payload.new;
+                // အကယ်၍ အော်ဒါ အခြေအနေက 'paid' (ငွေရှင်းပြီး) ဖြစ်သွားပါက
+                if (updatedOrder && updatedOrder.status === 'paid') {
+                    showReceipt(updatedOrder);
+                }
+            }).subscribe();
+        }
+
+        function showReceipt(order) {
+            document.getElementById('receipt-date').innerText = new Date().toLocaleString();
+            let itemsBox = document.getElementById('receipt-items-box'); itemsBox.innerHTML = '';
+            
+            let items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            if (Array.isArray(items)) {
+                items.forEach(i => {
+                    itemsBox.innerHTML += `<div class="flex justify-between"><span>• ${i.name} x ${i.qty}</span><span>${(i.price * i.qty).toLocaleString()} ကျပ်</span></div>`;
+                });
+            }
+            document.getElementById('receipt-total-price').innerText = parseInt(order.total_price).toLocaleString() + " ကျပ်";
+            document.getElementById('receipt-modal').classList.remove('hidden'); // ဘောင်ချာ Modal ဖွင့်မည်
+        }
+
+        function closeReceiptAndGoHome() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+            // စားပွဲဝိုင်း Link အမှန်အတိုင်း Reset လုပ်ပြီး Page ပြန်ဖွင့်မည်
+            window.location.href = window.location.pathname + "?table=" + tableId;
         }
     </script>
 </body>

@@ -7,14 +7,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 🔐 Admin စာမျက်နှာကို ကာကွယ်ရန် စကားဝှက်စစ်ဆေးသည့်စနစ်
+        // 🔐 Admin စကားဝှက်စစ်ဆေးသည့်စနစ် (Refresh လုပ်လျှင် ထပ်မတောင်းစေရန် sessionStorage သုံးထားသည်)
         (function() {
             let savedPassword = localStorage.getItem('admin_pwd') || 'admin123';
-            let enteredPassword = prompt("ကျေးဇူးပြု၍ ဆိုင်ရှင် Admin စကားဝှက် (Password) ကို ရိုက်ထည့်ပါဗျာ -");
-            if (enteredPassword !== savedPassword) {
-                alert("စကားဝှက် မှားယွင်းနေပါသဖြင့် ဝင်ရောက်ခွင့် မရှိပါဗျာ။");
-                window.location.href = "index.html"; 
-                document.body.innerHTML = "🛑 Access Denied...";
+            let isAuth = sessionStorage.getItem('admin_authenticated');
+            
+            if (!isAuth) {
+                let enteredPassword = prompt("ကျေးဇူးပြု၍ ဆိုင်ရှင် Admin စကားဝှက် (Password) ကို ရိုက်ထည့်ပါဗျာ -");
+                if (enteredPassword === savedPassword) {
+                    sessionStorage.setItem('admin_authenticated', 'true');
+                } else {
+                    alert("စကားဝှက် မှားယွင်းနေပါသဖြင့် ဝင်ရောက်ခွင့် မရှိပါဗျာ။");
+                    window.location.href = "index.html"; 
+                    document.body.innerHTML = "🛑 Access Denied...";
+                }
             }
         })();
     </script>
@@ -172,7 +178,7 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let tableMap = {};
         let isFirstLoad = true;
-        let globalSettingsObj = {}; // လက်ရှိ Settings ပုံလင့်ခ်ဟောင်းတွေ သိမ်းထားရန်
+        let globalSettingsObj = {}; 
 
         function playAlertSound() {
             try {
@@ -209,7 +215,11 @@
             if (tabId === 'settings-tab') fetchShopSettings();
         }
 
-        window.onload = async function() { await loadTableMap(); fetchShopSettings(); fetchOrdersRealtime(); };
+        window.onload = async function() { 
+            await loadTableMap(); 
+            fetchShopSettings(); 
+            fetchOrdersRealtime(); // ဝင်ဝင်ချင်း Real-time ချိတ်မည်
+        };
 
         async function loadTableMap() {
             try {
@@ -218,17 +228,15 @@
             } catch(e) {}
         }
 
-        // URL လင့်ခ်ထဲကနေ Storage ဖိုင်အမည်ကို ဆွဲထုတ်ပေးမည့် Helper လုပ်ဆောင်ချက်
         function getFileNameFromUrl(url) {
             if (!url) return null;
             try { return url.split('/').pop(); } catch(e) { return null; }
         }
 
-        // Supabase Storage ထဲက ပုံကို အပြီးတိုင် ဖျက်ပေးမည့် စနစ်
         async function deleteImageFromStorage(url) {
             const fileName = getFileNameFromUrl(url);
             if (!fileName) return;
-            try { await supabaseClient.storage.from('pos-images').remove([fileName]); } catch(e) {}
+            try { await supabaseClient.storage.from('restaurant-assets').remove([fileName]); } catch(e) {}
         }
 
         function processAndCropImage(file, targetWidth = 400, targetHeight = 400) {
@@ -264,7 +272,7 @@
 
         async function fetchShopSettings() {
             try {
-                const { data } = await supabaseClient.from('pos-images').select('*').eq('id', 1).single();
+                const { data } = await supabaseClient.from('restaurant_settings').select('*').eq('id', 1).single();
                 if (data) {
                     globalSettingsObj = data;
                     document.getElementById('shop-name-input').value = data.shop_name || '';
@@ -273,13 +281,11 @@
                     document.getElementById('shop-theme-input').value = data.theme_mode || 'light';
                     document.getElementById('shop-password-input').value = localStorage.getItem('admin_pwd') || 'admin123';
 
-                    // လက်ရှိ လိုဂိုပုံရှိရင် ပြသရန်
                     if (data.logo_url) {
                         document.getElementById('current-logo-img').src = data.logo_url;
                         document.getElementById('current-logo-box').classList.remove('hidden');
                     } else { document.getElementById('current-logo-box').classList.add('hidden'); }
 
-                    // လက်ရှိ နောက်ခံပုံရှိရင် ပြသရန်
                     if (data.bg_image_url) {
                         document.getElementById('current-bg-img').src = data.bg_image_url;
                         document.getElementById('current-bg-box').classList.remove('hidden');
@@ -288,7 +294,6 @@
             } catch (err) {}
         }
 
-        // ဆက်တင်ထဲက Logo သို့မဟုတ် BG ပုံကို Storage ထဲကပါ ဖျက်ပေးမည့် စနစ်
         async function deleteCurrentAsset(type) {
             if (!confirm("❌ ၎င်းပုံဟောင်းကို Supabase Storage ထဲကပါ လုံးဝ အပြီးတိုင် ဖျက်ပစ်မလားဗျာ?")) return;
             showToast("⏳ ဓာတ်ပုံဖျက်နေပါသည်...", "loading");
@@ -311,17 +316,17 @@
                 const theme = document.getElementById('shop-theme-input').value;
                 const newPwd = document.getElementById('shop-password-input').value;
 
-                // 🔐 စကားဝှက်အသစ်ကို သိမ်းဆည်းခြင်း
-                if (newPwd) { localStorage.setItem('admin_pwd', newPwd); }
+                if (newPwd) { 
+                    localStorage.setItem('admin_pwd', newPwd); 
+                }
                 
-                // ပုံအသစ်တင်ရင် ပုံဟောင်းကို Storage ထဲကပါ အလိုအလျောက် သွားဖျက်မည်
                 const newLogoUrl = await uploadImage('shop-logo-file', 'logo', true);
                 if (newLogoUrl && globalSettingsObj.logo_url) { await deleteImageFromStorage(globalSettingsObj.logo_url); }
 
                 const newBgUrl = await uploadImage('shop-bg-file', 'bg', false);
                 if (newBgUrl && globalSettingsObj.bg_image_url) { await deleteImageFromStorage(globalSettingsObj.bg_image_url); }
 
-                let updateData = { id: 1, shop_name: name, discount_percentage: discount, event_title: event, theme_mode: theme };
+                let updateData = { id: 1, shop_name: name, discount_percentage: discount, event_title: event, theme_mode: theme, password: newPwd };
                 if (newLogoUrl) updateData.logo_url = newLogoUrl;
                 if (newBgUrl) updateData.bg_image_url = newBgUrl;
 
@@ -374,12 +379,11 @@
 
         async function toggleMenuStatus(id, currentStatus) { await supabaseClient.from('menus').update({ is_available: !currentStatus }).eq('id', id); fetchMenuItems(); }
         
-        // 🔥 [စနစ်သစ်] မီနူးဖျက်လိုက်ရင် ဓာတ်ပုံကိုပါ Storage ထဲက တစ်ပါတည်း ဖျက်ပေးမည့်စနစ်
         async function deleteMenuItem(id, imageUrl) {
-            if(confirm('ယခုမီနူးကို ဖျက်ပစ်ပါက Supabase Storage ထဲက ဓာတ်ပုံပါ အပြီးတိုင် ပျက်သွားမည် ဖြစ်သည်။ သေချာပါသလားဗျာ?')) {
+            if(confirm('ယခုမီနူးကို ဖျက်ပစ်ပါက Storage ထဲက ဓာတ်ပုံပါ အပြီးတိုင် ပျက်သွားမည် ဖြစ်သည်။ သေချာပါသလားဗျာ?')) {
                 showToast("⏳ စာရင်းနှင့် ဓာတ်ပုံများကို ဖျက်နေပါသည်...", "loading");
-                if (imageUrl) { await deleteImageFromStorage(imageUrl); } // ပုံအရင်ဖျက်သည်
-                await supabaseClient.from('menus').delete().eq('id', id); // Database စာရင်းဖျက်သည်
+                if (imageUrl) { await deleteImageFromStorage(imageUrl); } 
+                await supabaseClient.from('menus').delete().eq('id', id); 
                 showToast("🗑️ မီနူးနှင့် ဓာတ်ပုံကို Storage ထဲမှ အပြီးဖျက်ပြီးပါပြီ။", "success");
                 fetchMenuItems();
             }
@@ -391,7 +395,7 @@
                 const container = document.getElementById('tables-list-container'); container.innerHTML = '';
                 if(data) {
                     data.forEach(t => {
-                        let myHostingUrl = "https://shwemezanet-wifi.github.io/-"; 
+                        let myHostingUrl = window.location.href.replace('admin.html', 'index.html');
                         let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myHostingUrl + '?table=' + t.id)}`;
                         container.innerHTML += `
                             <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center relative shadow-xs flex flex-col items-center">
@@ -416,11 +420,17 @@
         }
         async function deleteTable(id) { if(confirm('ဖျက်မလားဗျာ?')) { await supabaseClient.from('restaurant_tables').delete().eq('id', id); await loadTableMap(); fetchTables(); } }
 
+        // 🔥 [Real-time စနစ်ပြင်ဆင်မှု]
         function fetchOrdersRealtime() {
-            loadOrders();
-            supabaseClient.channel('admin-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => { 
-                if (payload.eventType === 'INSERT' && !isFirstLoad) { playAlertSound(); showToast("🔔 အော်ဒါအသစ်တစ်ခု ရောက်ရှိလာပါပြီဗျာ။", "info"); }
-                loadOrders(); 
+            loadOrders(); // ဝင်ဝင်ချင်း အော်ဒါအရင်ဆွဲထုတ်မယ်
+            
+            supabaseClient.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                if (payload.eventType === 'INSERT' && !isFirstLoad) { 
+                    playAlertSound(); 
+                    showToast("🔔 အော်ဒါအသစ်တစ်ခု ရောက်ရှိလာပါပြီဗျာ။", "info"); 
+                }
+                loadOrders(); // Real-time Update လုပ်ပေးမယ်
             }).subscribe();
         }
 
@@ -429,11 +439,13 @@
                 const { data } = await supabaseClient.from('orders').select('*').order('id', { ascending: false });
                 const container = document.getElementById('orders-container'); container.innerHTML = ''; isFirstLoad = false;
                 if(!data || data.length === 0) { container.innerHTML = '<p class="text-slate-400 italic p-4 bg-white rounded-2xl border border-slate-100 col-span-full">လက်ရှိ အော်ဒါ မရှိသေးပါဗျာ။</p>'; return; }
+                
                 data.forEach(order => {
                     let itemsHtml = ''; let items = []; try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch(e) {}
                     if(Array.isArray(items)) { items.forEach(i => { itemsHtml += `<div class="flex justify-between text-sm py-1.5 border-b border-slate-100 font-medium"><span>• ${i.name} x ${i.qty}</span><span class="text-slate-500">${(i.price * i.qty).toLocaleString()} ကျပ်</span></div>`; }); }
                     let tableNameDisplay = tableMap[order.table_id] || `ဝိုင်း ID: ${order.table_id}`;
-                    let statusBadge = order.status === 'pending' ? '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">⏳ အော်ဒါရရှိသည်</span>' : '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">💰 Ngwe Shin Pye</span>';
+                    let statusBadge = order.status === 'pending' ? '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">⏳ အော်ဒါရရှိသည်</span>' : '<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">💰 ငွေရှင်းပြီး</span>';
+                    
                     container.innerHTML += `
                         <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
                             <div>
@@ -454,7 +466,16 @@
             } catch(err) {}
         }
 
-        async function confirmPayment(orderId, tableId) { await supabaseClient.from('orders').update({ status: 'paid' }).eq('id', orderId); await supabaseClient.from('restaurant_tables').update({ status: 'available' }).eq('id', tableId); loadOrders(); }
+        async function confirmPayment(orderId, tableId) { 
+            showToast("⏳ ငွေရှင်းနေပါသည်...", "loading");
+            // 1. Order status ကို 'paid' ဟု ပြောင်းမည်
+            await supabaseClient.from('orders').update({ status: 'paid' }).eq('id', orderId); 
+            // 2. စားပွဲဝိုင်းကို ပြန်အားအောင် လုပ်မည်
+            await supabaseClient.from('restaurant_tables').update({ status: 'available' }).eq('id', tableId); 
+            showToast("💰 ငွေရှင်းခြင်း အောင်မြင်ပါသည်!", "success");
+            loadOrders(); 
+        }
+        
         async function deleteOrder(id) { if(confirm('ဖျက်မလားဗျာ?')) { await supabaseClient.from('orders').delete().eq('id', id); loadOrders(); } }
     </script>
     <style> .vertical-top { vertical-align: top; } </style>
